@@ -36,6 +36,7 @@
       border: none;
       border-radius: 4px;
       font-size: 16px;
+      cursor: pointer;
     }
     
     #loading-indicator {
@@ -101,14 +102,28 @@
     scale="0.1 0.1 0.1"
     shadow-intensity="1" 
     auto-rotate
-    exposure="1">
+    exposure="0.5">
   </model-viewer>
   
+  <!-- Lighting controls for exposure and shadow intensity -->
+  <div id="lighting-controls" style="position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; color: white;">
+    <div>
+      <label for="exposureControl">Exposure:</label>
+      <input type="range" id="exposureControl" min="0.5" max="5" step="0.1" value="0.5">
+    </div>
+    <div style="margin-top: 8px;">
+      <label for="shadowControl">Shadow Intensity:</label>
+      <input type="range" id="shadowControl" min="0" max="2" step="0.1" value="1">
+    </div>
+  </div>
+  
+  <!-- Model cycling and auto play controls -->
   <div id="model-controls">
     <button id="prevModel">Previous</button>
+    <button id="toggleAutoPlay">Stop Auto Play</button>
     <button id="nextModel">Next</button>
   </div>
-
+  
   <script src="app.js"></script>
 </body>
 </html>
