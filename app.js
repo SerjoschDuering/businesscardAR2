@@ -19,6 +19,44 @@ document.addEventListener('DOMContentLoaded', () => {
   let autoPlayInterval = null;
   const autoPlayDelay = 1000; // delay in milliseconds between auto model switches
 
+  // Updated timeout of 20 seconds (20000 ms)
+  const timeoutMs = 20000;
+
+  // Function that performs a fetch call on the given endpoint with a timeout
+  function tryFetchEndpoint(endpoint, modelId, timeoutMs) {
+    const controller = new AbortController();
+    const timeoutID = setTimeout(() => {
+      console.error(`Fetch request to ${endpoint} timed out after ${timeoutMs}ms`);
+      controller.abort();
+    }, timeoutMs);
+
+    return fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id: modelId }),
+      signal: controller.signal
+    }).then(response => {
+      clearTimeout(timeoutID);
+      if (!response.ok) {
+        return Promise.reject(new Error(`HTTP error! status: ${response.status}`));
+      }
+      return response;
+    });
+  }
+
+  // Function to fetch GLTF data with a fallback mechanism
+  function fetchGLTFData(modelId) {
+    const primaryEndpoint = 'https://run8n.xyz/webhook-test/getGLTF';
+    const fallbackEndpoint = 'https://run8n.xyz/webhook/getGLTF';
+    return tryFetchEndpoint(primaryEndpoint, modelId, timeoutMs)
+      .catch(error => {
+        console.error(`Primary endpoint failed: ${error}. Trying fallback endpoint...`);
+        return tryFetchEndpoint(fallbackEndpoint, modelId, timeoutMs);
+      });
+  }
+
   // ------------------- Fetching model data via API -------------------
   // Extract the model ID from URL parameters
   const params = new URLSearchParams(window.location.search);
@@ -29,113 +67,87 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   console.log("Extracted model ID:", modelId);
 
-  // Define the API endpoint
-  const endpoint = 'https://run8n.xyz/webhook-test/getGLTF';
-  console.log("Fetching models from endpoint:", endpoint);
-
-  // Create an AbortController with a timeout
-  const controller = new AbortController();
-  const timeoutMs = 15000;
-  const timeoutID = setTimeout(() => {
-    console.error(`Fetch request timed out after ${timeoutMs}ms`);
-    controller.abort();
-    showError("Request timed out. Please check your connection and try again.");
-  }, timeoutMs);
-
   // Show loading indicator
   loadingIndicator.style.display = 'flex';
 
-  // Fetch models from API
-  fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ id: modelId }),
-    signal: controller.signal
-  })
-  .then(response => {
-    clearTimeout(timeoutID);
-    console.log("HTTP response status:", response.status);
-    return response.json();
-  })
-  .then(data => {
-    console.log("Raw webhook response data:", data);
+  // Fetch models from API using our fallback mechanism
+  fetchGLTFData(modelId)
+    .then(response => {
+      console.log("HTTP response status:", response.status);
+      return response.json();
+    })
+    .then(data => {
+      console.log("Raw webhook response data:", data);
 
-    // Parse each entry's 'data' property
-    const parsedModels = data.map((entry, index) => {
-      if (!entry.data) {
-        console.error(`Entry at index ${index} missing 'data' property.`);
-        return null;
+      // Parse each entry's 'data' property
+      const parsedModels = data.map((entry, index) => {
+        if (!entry.data) {
+          console.error(`Entry at index ${index} missing 'data' property.`);
+          return null;
+        }
+        try {
+          const parsed = JSON.parse(entry.data);
+          console.log(`Parsed model at index ${index}:`, parsed);
+          return parsed;
+        } catch (error) {
+          console.error(`Error parsing JSON for model at index ${index}:`, error);
+          return null;
+        }
+      }).filter(model => model !== null);
+
+      if (parsedModels.length === 0) {
+        console.error("No valid model JSON found.");
+        showError("No valid model data found.");
+        return;
       }
-      try {
-        const parsed = JSON.parse(entry.data);
-        console.log(`Parsed model at index ${index}:`, parsed);
-        return parsed;
-      } catch (error) {
-        console.error(`Error parsing JSON for model at index ${index}:`, error);
-        return null;
+
+      // Create Blob URLs from the parsed glTF JSON objects
+      modelUrls = parsedModels.map((gltf, index) => {
+        try {
+          const blob = new Blob([JSON.stringify(gltf)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          console.log(`Created blob URL for model index ${index}:`, url);
+          return url;
+        } catch (error) {
+          console.error(`Error creating blob URL for model index ${index}:`, error);
+          return null;
+        }
+      }).filter(url => url !== null);
+
+      if (modelUrls.length === 0) {
+        console.error("No valid blob URLs generated.");
+        showError("Failed to prepare models for display.");
+        return;
       }
-    }).filter(model => model !== null);
 
-    if (parsedModels.length === 0) {
-      console.error("No valid model JSON found.");
-      showError("No valid model data found.");
-      return;
-    }
+      // Load the first model
+      console.log("Setting initial model URL:", modelUrls[0]);
+      modelViewer.src = modelUrls[0];
 
-    // Create Blob URLs from the parsed glTF JSON objects
-    modelUrls = parsedModels.map((gltf, index) => {
-      try {
-        const blob = new Blob([JSON.stringify(gltf)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        console.log(`Created blob URL for model index ${index}:`, url);
-        return url;
-      } catch (error) {
-        console.error(`Error creating blob URL for model index ${index}:`, error);
-        return null;
+      // Set up manual model cycling controls
+      setupModelControls();
+
+      // Hide loading indicator
+      loadingIndicator.style.display = 'none';
+
+      console.log(`Successfully loaded ${modelUrls.length} models`);
+
+      // Start auto play by default if there is more than one model
+      if (modelUrls.length > 1) {
+        autoPlayActive = true;
+        autoPlayButton.textContent = "Stop Auto Play";
+        autoPlayInterval = setInterval(() => {
+          currentModelIndex = (currentModelIndex + 1) % modelUrls.length;
+          modelViewer.src = modelUrls[currentModelIndex];
+          console.log(`Auto Play switched to model ${currentModelIndex + 1} of ${modelUrls.length}`);
+        }, autoPlayDelay);
       }
-    }).filter(url => url !== null);
-
-    if (modelUrls.length === 0) {
-      console.error("No valid blob URLs generated.");
-      showError("Failed to prepare models for display.");
-      return;
-    }
-
-    // Load the first model
-    console.log("Setting initial model URL:", modelUrls[0]);
-    modelViewer.src = modelUrls[0];
-
-    // Set up manual model cycling controls
-    setupModelControls();
-
-    // Hide loading indicator
-    loadingIndicator.style.display = 'none';
-
-    console.log(`Successfully loaded ${modelUrls.length} models`);
-
-    // Start auto play by default if there is more than one model
-    if (modelUrls.length > 1) {
-      autoPlayActive = true;
-      autoPlayButton.textContent = "Stop Auto Play";
-      autoPlayInterval = setInterval(() => {
-        currentModelIndex = (currentModelIndex + 1) % modelUrls.length;
-        modelViewer.src = modelUrls[currentModelIndex];
-        console.log(`Auto Play switched to model ${currentModelIndex + 1} of ${modelUrls.length}`);
-      }, autoPlayDelay);
-    }
-  })
-  .catch(error => {
-    if (error.name === 'AbortError') {
-      console.error("Fetch request aborted due to timeout.");
-      showError("Request timed out. Please check your connection and try again.");
-    } else {
+    })
+    .catch(error => {
       console.error("Error fetching models:", error);
       showError(`Failed to load models: ${error.message}`);
-    }
-    loadingIndicator.style.display = 'none';
-  });
+      loadingIndicator.style.display = 'none';
+    });
 
   // Set up model cycling controls
   function setupModelControls() {
