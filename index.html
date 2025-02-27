@@ -7,6 +7,7 @@
   <!-- Import the Model-Viewer component -->
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
+    /* Basic resets and styles */
     body {
       margin: 0;
       padding: 0;
@@ -18,27 +19,8 @@
       height: 80vh;
       background-color: transparent;
     }
-    
-    #model-controls {
-      position: fixed;
-      bottom: 20px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      z-index: 100;
-    }
-    
-    button {
-      padding: 10px 15px;
-      background: #2196F3;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    
+
+    /* Loading indicator styles */
     #loading-indicator {
       position: fixed;
       top: 0;
@@ -69,7 +51,8 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    
+
+    /* Error message styles */
     #error-message {
       color: #FF5252;
       font-weight: bold;
@@ -79,6 +62,123 @@
       border-radius: 4px;
       background-color: rgba(255, 82, 82, 0.1);
       display: none;
+    }
+
+    /* Controls for cycling and auto play */
+    #model-controls {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      z-index: 100;
+    }
+    
+    #model-controls button {
+      padding: 10px 15px;
+      background: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    /* Custom AR button – positioned at top left */
+    #custom-ar-container {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 101;
+    }
+    
+    #custom-ar-container button {
+      padding: 10px 15px;
+      background: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    /* Settings button (round) at top right */
+    #settings-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 101;
+    }
+    
+    #settings-button button {
+      border: none;
+      background: #2196F3;
+      color: white;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    /* Modal styles for render settings */
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      z-index: 102;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.6);
+    }
+    
+    .modal-content {
+      background-color: #fff;
+      margin: 20% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 300px;
+      border-radius: 8px;
+      text-align: left;
+    }
+    
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .close:hover,
+    .close:focus {
+      color: #000;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    
+    .setting-group {
+      margin-bottom: 20px;
+    }
+    
+    .setting-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    /* Responsive adjustments for mobile-friendly layout */
+    @media (max-width: 600px) {
+      #model-controls button, #custom-ar-container button, #settings-button button {
+        font-size: 14px;
+        padding: 8px 12px;
+      }
+      .modal-content {
+        width: 90%;
+      }
     }
   </style>
 </head>
@@ -90,7 +190,7 @@
   
   <div id="error-message"></div>
   
-  <!-- Updated model-viewer without AR Quick Look support -->
+  <!-- The 3D model viewer -->
   <model-viewer 
     id="modelViewer"
     camera-controls
@@ -103,16 +203,30 @@
     auto-rotate
     exposure="0.5">
   </model-viewer>
+
+  <!-- Custom AR Button -->
+  <div id="custom-ar-container">
+    <button onclick="document.getElementById('modelViewer').activateAR()">Launch AR</button>
+  </div>
+
+  <!-- Settings button to open render settings modal -->
+  <div id="settings-button">
+    <button id="open-settings-btn">⚙</button>
+  </div>
   
-  <!-- Lighting controls for exposure and shadow intensity -->
-  <div id="lighting-controls" style="position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; color: white;">
-    <div>
-      <label for="exposureControl">Exposure:</label>
-      <input type="range" id="exposureControl" min="0.5" max="5" step="0.1" value="0.5">
-    </div>
-    <div style="margin-top: 8px;">
-      <label for="shadowControl">Shadow Intensity:</label>
-      <input type="range" id="shadowControl" min="0" max="2" step="0.1" value="1">
+  <!-- Modal for Render Settings -->
+  <div id="settings-modal" class="modal">
+    <div class="modal-content">
+      <span id="close-settings-btn" class="close">&times;</span>
+      <h2>Render Settings</h2>
+      <div class="setting-group">
+        <label for="exposureControl">Exposure:</label>
+        <input type="range" id="exposureControl" min="0.5" max="5" step="0.1" value="0.5">
+      </div>
+      <div class="setting-group">
+        <label for="shadowControl">Shadow Intensity:</label>
+        <input type="range" id="shadowControl" min="0" max="2" step="0.1" value="1">
+      </div>
     </div>
   </div>
   
@@ -121,14 +235,28 @@
     <button id="prevModel">Previous</button>
     <button id="toggleAutoPlay">Stop Auto Play</button>
     <button id="nextModel">Next</button>
-    <!-- Custom AR Button -->
-<div id="custom-ar-container" style="position: fixed; top: 20px; left: 20px; z-index: 101;">
-  <button onclick="document.getElementById('modelViewer').activateAR()">
-    Launch AR
-  </button>
-</div>
   </div>
   
   <script src="app.js"></script>
+  <script>
+    // Modal functionality for the render settings
+    const modal = document.getElementById('settings-modal');
+    const openSettingsBtn = document.getElementById('open-settings-btn');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    
+    openSettingsBtn.addEventListener('click', () => {
+      modal.style.display = 'block';
+    });
+    
+    closeSettingsBtn.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+    
+    window.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+  </script>
 </body>
 </html>

@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const prevButton = document.getElementById('prevModel');
   const autoPlayButton = document.getElementById('toggleAutoPlay');
 
-  // Lighting controls elements
+  // Lighting controls elements (now inside the settings modal)
   const exposureControl = document.getElementById('exposureControl');
   const shadowControl = document.getElementById('shadowControl');
 
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentModelIndex = 0;
   let autoPlayActive = false;
   let autoPlayInterval = null;
-  const autoPlayDelay = 1000; // delay in milliseconds between auto model switches
+  const autoPlayDelay = 750; // delay in milliseconds between auto model switches
 
   // Updated timeout of 20 seconds (20000 ms)
   const timeoutMs = 20000;
