@@ -6,183 +6,16 @@
   <title>3D Model Viewer</title>
   <!-- Import the Model-Viewer component -->
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <style>
-    /* Basic resets and styles */
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
-    
-    model-viewer {
-      width: 100%;
-      height: 80vh;
-      background-color: transparent;
-    }
-
-    /* Loading indicator styles */
-    #loading-indicator {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.7);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      z-index: 1000;
-      font-size: 1.2rem;
-    }
-    
-    .spinner {
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #2196F3;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1.5s linear infinite;
-      margin-bottom: 20px;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Error message styles */
-    #error-message {
-      color: #FF5252;
-      font-weight: bold;
-      text-align: center;
-      margin: 20px;
-      padding: 10px;
-      border-radius: 4px;
-      background-color: rgba(255, 82, 82, 0.1);
-      display: none;
-    }
-
-    /* Controls for cycling and auto play */
-    #model-controls {
-      position: fixed;
-      bottom: 20px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      z-index: 100;
-    }
-    
-    #model-controls button {
-      padding: 10px 15px;
-      background: #2196F3;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    /* Custom AR button – positioned at top left */
-    #custom-ar-container {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 101;
-    }
-    
-    #custom-ar-container button {
-      padding: 10px 15px;
-      background: #2196F3;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    /* Settings button (round) at top right */
-    #settings-button {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 101;
-    }
-    
-    #settings-button button {
-      border: none;
-      background: #2196F3;
-      color: white;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      font-size: 24px;
-      cursor: pointer;
-    }
-
-    /* Modal styles for render settings */
-    .modal {
-      display: none; /* Hidden by default */
-      position: fixed;
-      z-index: 102;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.6);
-    }
-    
-    .modal-content {
-      background-color: #fff;
-      margin: 20% auto;
-      padding: 20px;
-      border: 1px solid #888;
-      width: 80%;
-      max-width: 300px;
-      border-radius: 8px;
-      text-align: left;
-    }
-    
-    .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    
-    .close:hover,
-    .close:focus {
-      color: #000;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    
-    .setting-group {
-      margin-bottom: 20px;
-    }
-    
-    .setting-group label {
-      display: block;
-      margin-bottom: 5px;
-    }
-
-    /* Responsive adjustments for mobile-friendly layout */
-    @media (max-width: 600px) {
-      #model-controls button, #custom-ar-container button, #settings-button button {
-        font-size: 14px;
-        padding: 8px 12px;
-      }
-      .modal-content {
-        width: 90%;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <link rel="icon" href="data:,">
+  <!-- Branding container with logo and website link -->
+  <div id="branding-container">
+    <img src="rehubLogo.jpg" alt="Rehub Logo" id="branding-logo">
+    <p><a href="https://www.rehub.team" target="_blank">Visit our Website</a></p>
+  </div>
+
   <div id="loading-indicator">
     <div class="spinner"></div>
     <p id="loading-text">Loading models...</p>
@@ -191,23 +24,22 @@
   <div id="error-message"></div>
   
   <!-- The 3D model viewer -->
+  <!-- Updated ar-modes for Scene Viewer and Quick Look -->
   <model-viewer 
     id="modelViewer"
     camera-controls
     ar
-    ar-modes="webxr scene-viewer"
+    ar-modes="scene-viewer quick-look"
     camera-orbit="0deg 70deg 4.5m"
     camera-target="0m 1m 0m"
     scale="0.1 0.1 0.1"
     shadow-intensity="1" 
+    shadow-softness="0.01"
     auto-rotate
-    exposure="0.5">
+    exposure="0.4">
+    
   </model-viewer>
 
-  <!-- Custom AR Button -->
-  <div id="custom-ar-container">
-    <button onclick="document.getElementById('modelViewer').activateAR()">Launch AR</button>
-  </div>
 
   <!-- Settings button to open render settings modal -->
   <div id="settings-button">
@@ -221,7 +53,7 @@
       <h2>Render Settings</h2>
       <div class="setting-group">
         <label for="exposureControl">Exposure:</label>
-        <input type="range" id="exposureControl" min="0.5" max="5" step="0.1" value="0.5">
+        <input type="range" id="exposureControl" min="0.3" max="5" step="0.1" value="0.5">
       </div>
       <div class="setting-group">
         <label for="shadowControl">Shadow Intensity:</label>

@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const prevButton = document.getElementById('prevModel');
   const autoPlayButton = document.getElementById('toggleAutoPlay');
 
-  // Lighting controls elements (now inside the settings modal)
+  // Lighting controls elements (inside the settings modal)
   const exposureControl = document.getElementById('exposureControl');
   const shadowControl = document.getElementById('shadowControl');
 
@@ -18,11 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
   let autoPlayActive = false;
   let autoPlayInterval = null;
   const autoPlayDelay = 750; // delay in milliseconds between auto model switches
+  const timeoutMs = 20000;   // fetch timeout
 
-  // Updated timeout of 20 seconds (20000 ms)
-  const timeoutMs = 20000;
+  // Cache for USDZ conversion results
+  const usdzCache = {};
 
-  // Function that performs a fetch call on the given endpoint with a timeout
+  // Helper to check if device is iOS
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  }
+
+  // Function that performs a fetch call on a given endpoint with a timeout
   function tryFetchEndpoint(endpoint, modelId, timeoutMs) {
     const controller = new AbortController();
     const timeoutID = setTimeout(() => {
@@ -57,8 +63,48 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
+  // Function to fetch USDZ conversion using a live conversion API
+  function fetchUSDZConversion(gltfUrl) {
+    const conversionApi = "https://your-usdz-api.com/convert?url=" + encodeURIComponent(gltfUrl);
+    return fetch(conversionApi)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Conversion API request failed");
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.usdzUrl) {
+          return data.usdzUrl;
+        }
+        throw new Error("USDZ URL not found in conversion API response");
+      });
+  }
+
+  // Helper function to load a model and update ios-src if needed
+  function loadModel(index) {
+    const url = modelUrls[index];
+    console.log("Loading model at index", index, "URL:", url);
+    modelViewer.src = url;
+
+    if (isIOS()) {
+      if (usdzCache[url]) {
+        modelViewer.setAttribute('ios-src', usdzCache[url]);
+      } else {
+        fetchUSDZConversion(url)
+          .then(usdzUrl => {
+            usdzCache[url] = usdzUrl;
+            modelViewer.setAttribute('ios-src', usdzUrl);
+            console.log("Set ios-src for model index", index, usdzUrl);
+          })
+          .catch(error => {
+            console.error("USDZ conversion failed for model index", index, error);
+          });
+      }
+    }
+  }
+
   // ------------------- Fetching model data via API -------------------
-  // Extract the model ID from URL parameters
   const params = new URLSearchParams(window.location.search);
   const modelId = params.get('id');
   if (!modelId) {
@@ -70,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Show loading indicator
   loadingIndicator.style.display = 'flex';
 
-  // Fetch models from API using our fallback mechanism
+  // Fetch models from API
   fetchGLTFData(modelId)
     .then(response => {
       console.log("HTTP response status:", response.status);
@@ -101,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Create Blob URLs from the parsed glTF JSON objects
+      // Create Blob URLs from parsed glTF JSON objects
       modelUrls = parsedModels.map((gltf, index) => {
         try {
           const blob = new Blob([JSON.stringify(gltf)], { type: 'application/json' });
@@ -120,9 +166,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Load the first model
-      console.log("Setting initial model URL:", modelUrls[0]);
-      modelViewer.src = modelUrls[0];
+      // Load the first model using our helper function
+      loadModel(0);
 
       // Set up manual model cycling controls
       setupModelControls();
@@ -132,13 +177,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       console.log(`Successfully loaded ${modelUrls.length} models`);
 
-      // Start auto play by default if there is more than one model
+      // Start auto play by default if more than one model exists
       if (modelUrls.length > 1) {
         autoPlayActive = true;
         autoPlayButton.textContent = "Stop Auto Play";
         autoPlayInterval = setInterval(() => {
           currentModelIndex = (currentModelIndex + 1) % modelUrls.length;
-          modelViewer.src = modelUrls[currentModelIndex];
+          loadModel(currentModelIndex);
           console.log(`Auto Play switched to model ${currentModelIndex + 1} of ${modelUrls.length}`);
         }, autoPlayDelay);
       }
@@ -158,13 +203,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     nextButton.addEventListener('click', () => {
       currentModelIndex = (currentModelIndex + 1) % modelUrls.length;
-      modelViewer.src = modelUrls[currentModelIndex];
+      loadModel(currentModelIndex);
       console.log(`Switched to model ${currentModelIndex + 1} of ${modelUrls.length}`);
     });
 
     prevButton.addEventListener('click', () => {
       currentModelIndex = (currentModelIndex - 1 + modelUrls.length) % modelUrls.length;
-      modelViewer.src = modelUrls[currentModelIndex];
+      loadModel(currentModelIndex);
       console.log(`Switched to model ${currentModelIndex + 1} of ${modelUrls.length}`);
     });
   }
@@ -176,13 +221,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn("Auto play is disabled because there is only one model.");
         return;
       }
-      // Toggle auto play state
       autoPlayActive = !autoPlayActive;
       if (autoPlayActive) {
         autoPlayButton.textContent = "Stop Auto Play";
         autoPlayInterval = setInterval(() => {
           currentModelIndex = (currentModelIndex + 1) % modelUrls.length;
-          modelViewer.src = modelUrls[currentModelIndex];
+          loadModel(currentModelIndex);
           console.log(`Auto Play switched to model ${currentModelIndex + 1} of ${modelUrls.length}`);
         }, autoPlayDelay);
       } else {
@@ -208,7 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listen for model loading events
   modelViewer.addEventListener('load', () => {
     console.log("Model loaded successfully");
-    // Ensure the camera settings focus on your giant cube
     modelViewer.setAttribute('camera-orbit', '0deg 70deg 4.5m');
     modelViewer.setAttribute('camera-target', '0m 1m 0m');
     modelViewer.setAttribute('scale', '0.1 0.1 0.1');
