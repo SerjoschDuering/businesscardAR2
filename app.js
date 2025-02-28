@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listen for model loading events.
   modelViewer.addEventListener('load', () => {
     console.log("Model loaded successfully");
-    modelViewer.setAttribute('camera-orbit', '0deg 70deg 4.5m');
+    modelViewer.setAttribute('camera-orbit', '0deg 60deg 4.5m');
     modelViewer.setAttribute('camera-target', '0m 1m 0m');
     modelViewer.setAttribute('scale', '0.1 0.1 0.1');
   });
