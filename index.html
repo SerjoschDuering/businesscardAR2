@@ -37,9 +37,7 @@
     shadow-softness="0.01"
     auto-rotate
     exposure="0.4">
-    
   </model-viewer>
-
 
   <!-- Settings button to open render settings modal -->
   <div id="settings-button">
@@ -61,17 +59,31 @@
       </div>
     </div>
   </div>
-  
+
+  <!-- KPI Display (always visible) -->
+  <div id="kpiDisplay">
+    <div class="kpi-container" id="kpiContainer">
+      <!-- KPI cards will be dynamically inserted here by app.js -->
+    </div>
+  </div>
+
   <!-- Model cycling and auto play controls -->
   <div id="model-controls">
-    <button id="prevModel">Previous</button>
-    <button id="toggleAutoPlay">Stop Auto Play</button>
-    <button id="nextModel">Next</button>
+    <div class="control-left">
+      <button id="toggleKPIButton">Hide KPI</button>
+    </div>
+    <div class="control-center">
+      <button id="toggleAutoPlay">Stop Auto Play</button>
+    </div>
+    <div class="control-right">
+      <button id="prevModel">&lt;</button>
+      <button id="nextModel">&gt;</button>
+    </div>
   </div>
   
   <script src="app.js"></script>
   <script>
-    // Modal functionality for the render settings
+    // Modal functionality for the Render Settings modal
     const modal = document.getElementById('settings-modal');
     const openSettingsBtn = document.getElementById('open-settings-btn');
     const closeSettingsBtn = document.getElementById('close-settings-btn');
@@ -87,6 +99,20 @@
     window.addEventListener('click', (event) => {
       if (event.target === modal) {
         modal.style.display = 'none';
+      }
+    });
+    
+    // KPI Toggle functionality: Toggle the visibility of the KPI display container.
+    const toggleKPIButton = document.getElementById("toggleKPIButton");
+    const kpiDisplay = document.getElementById("kpiDisplay");
+    
+    toggleKPIButton.addEventListener("click", () => {
+      if (kpiDisplay.style.display === "none") {
+        kpiDisplay.style.display = "block";
+        toggleKPIButton.textContent = "Hide KPI";
+      } else {
+        kpiDisplay.style.display = "none";
+        toggleKPIButton.textContent = "Show KPI";
       }
     });
   </script>

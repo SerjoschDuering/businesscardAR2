@@ -8,17 +8,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const prevButton = document.getElementById('prevModel');
   const autoPlayButton = document.getElementById('toggleAutoPlay');
 
+  // Assume the KPI modal’s container exists in the HTML with id "kpiContainer"
+
   // Lighting controls elements (inside the settings modal)
   const exposureControl = document.getElementById('exposureControl');
   const shadowControl = document.getElementById('shadowControl');
 
   // Variables for model management and auto play
   let modelUrls = [];
+  let modelsData = []; // Array to store blob URLs plus additional metadata
+  let activeModelData = null; // Currently active model metadata
   let currentModelIndex = 0;
   let autoPlayActive = false;
   let autoPlayInterval = null;
-  const autoPlayDelay = 750; // delay in milliseconds between auto model switches
-  const timeoutMs = 20000;   // fetch timeout
+  const autoPlayDelay = 750; // in milliseconds
+  const timeoutMs = 20000;   // Fetch timeout
 
   // Cache for USDZ conversion results
   const usdzCache = {};
@@ -81,19 +85,91 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
-  // Helper function to load a model and update ios-src if needed
+  // --- KPI Helper Functions ---
+
+  // Smart rounding function for KPI values
+  function formatNumber(num) {
+    if (typeof num !== 'number') return num;
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + " Mio";
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + "k";
+    } else {
+      return num.toFixed(1);
+    }
+  }
+
+  // Extract only the desired KPIs from the data (GRZ, BMZ, BGF, Kosten)
+  function extractKPIs(data) {
+    const keys = {
+      GRZ: null,
+      BMZ: null,
+      BGF: null,
+      Kosten: null
+    };
+    data.rows.forEach(row => {
+      const label = row[0];
+      if (/GRZ/i.test(label) && !keys.GRZ) {
+        keys.GRZ = row;
+      }
+      if (/BMZ/i.test(label) && !keys.BMZ) {
+        keys.BMZ = row;
+      }
+      if (/BGF/i.test(label) && !keys.BGF) {
+        keys.BGF = row;
+      }
+      if (/Kosten/i.test(label) && !keys.Kosten) {
+        keys.Kosten = row;
+      }
+    });
+    return keys;
+  }
+
+  // Update the KPI display; the HTML container with id "kpiContainer" is updated here.
+  function updateKPI(kpiData) {
+    const container = document.getElementById("kpiContainer");
+    if (!container) {
+      console.warn("KPI container element not found.");
+      return;
+    }
+    container.innerHTML = ""; // Clear previous KPI entries.
+    const extracted = extractKPIs(kpiData);
+    const keysOrder = ["GRZ", "BMZ", "BGF", "Kosten"];
+    keysOrder.forEach(key => {
+      const row = extracted[key];
+      if (row) {
+        const rawValue = row[1];
+        const unit = row[2];
+        const value = formatNumber(rawValue) + (unit ? (" " + unit) : "");
+        const card = document.createElement("div");
+        card.className = "kpi-box";
+        card.innerHTML = `<div class="kpi-label">${key}</div><div class="kpi-value">${value}</div>`;
+        container.appendChild(card);
+      }
+    });
+  }
+
+  // --- Updated loadModel Function ---
   function loadModel(index) {
-    const url = modelUrls[index];
-    console.log("Loading model at index", index, "URL:", url);
-    modelViewer.src = url;
+    const modelData = modelsData[index];
+    console.log("Loading model at index", index, "URL:", modelData.url);
+    modelViewer.src = modelData.url;
+    activeModelData = modelData; // Update currently active model metadata
+
+    // Crash the app if no KPI data is provided.
+    if (!activeModelData.kpi || !activeModelData.kpi.rows || activeModelData.kpi.rows.length === 0) {
+      throw new Error("No KPI data found for model: " + activeModelData.name);
+    }
+    // Update the KPI view with the current model’s KPI data.
+    updateKPI(activeModelData.kpi);
 
     if (isIOS()) {
-      if (usdzCache[url]) {
-        modelViewer.setAttribute('ios-src', usdzCache[url]);
+      if (usdzCache[modelData.url]) {
+        modelViewer.setAttribute('ios-src', usdzCache[modelData.url]);
       } else {
-        fetchUSDZConversion(url)
+        fetchUSDZConversion(modelData.url)
           .then(usdzUrl => {
-            usdzCache[url] = usdzUrl;
+            usdzCache[modelData.url] = usdzUrl;
             modelViewer.setAttribute('ios-src', usdzUrl);
             console.log("Set ios-src for model index", index, usdzUrl);
           })
@@ -104,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ------------------- Fetching model data via API -------------------
+  // ------------------- Fetching Model Data via API -------------------
   const params = new URLSearchParams(window.location.search);
   const modelId = params.get('id');
   if (!modelId) {
@@ -116,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Show loading indicator
   loadingIndicator.style.display = 'flex';
 
-  // Fetch models from API
   fetchGLTFData(modelId)
     .then(response => {
       console.log("HTTP response status:", response.status);
@@ -124,19 +199,26 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .then(data => {
       console.log("Raw webhook response data:", data);
-
-      // Parse each entry's 'data' property
+      
+      // Parse each entry's 'data' property with the new nested structure.
       const parsedModels = data.map((entry, index) => {
         if (!entry.data) {
           console.error(`Entry at index ${index} missing 'data' property.`);
           return null;
         }
+        const modelData = entry.data;
         try {
-          const parsed = JSON.parse(entry.data);
-          console.log(`Parsed model at index ${index}:`, parsed);
-          return parsed;
+          // Parse fileContent (a JSON string) to get glTF content.
+          const gltf = JSON.parse(modelData.fileContent);
+          console.log(`Parsed model at index ${index}:`, gltf);
+          return {
+            name: modelData.name,
+            gltf: gltf,
+            kpi: modelData.kpi,  // updated property name to lower-case to match payload
+            active_variant: modelData.active_variant
+          };
         } catch (error) {
-          console.error(`Error parsing JSON for model at index ${index}:`, error);
+          console.error(`Error parsing fileContent for model at index ${index}:`, error);
           return null;
         }
       }).filter(model => model !== null);
@@ -147,37 +229,42 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Create Blob URLs from parsed glTF JSON objects
-      modelUrls = parsedModels.map((gltf, index) => {
+      // Create Blob URLs from parsed glTF JSON objects and store additional metadata.
+      const modelsDataArr = parsedModels.map((model, index) => {
         try {
-          const blob = new Blob([JSON.stringify(gltf)], { type: 'application/json' });
+          const blob = new Blob([JSON.stringify(model.gltf)], { type: 'application/json' });
           const url = URL.createObjectURL(blob);
-          console.log(`Created blob URL for model index ${index}:`, url);
-          return url;
+          console.log(`Created blob URL for model at index ${index}:`, url);
+          return {
+            url: url,
+            name: model.name,
+            kpi: model.kpi,  // updated property name
+            active_variant: model.active_variant
+          };
         } catch (error) {
-          console.error(`Error creating blob URL for model index ${index}:`, error);
+          console.error(`Error creating blob URL for model at index ${index}:`, error);
           return null;
         }
-      }).filter(url => url !== null);
+      }).filter(item => item !== null);
 
-      if (modelUrls.length === 0) {
+      if (modelsDataArr.length === 0) {
         console.error("No valid blob URLs generated.");
         showError("Failed to prepare models for display.");
         return;
       }
 
-      // Load the first model using our helper function
+      // Update global data.
+      modelsData = modelsDataArr;
+      modelUrls = modelsData.map(item => item.url);
+
+      // Load the first model.
       loadModel(0);
-
-      // Set up manual model cycling controls
       setupModelControls();
-
-      // Hide loading indicator
+      // Hide loading indicator.
       loadingIndicator.style.display = 'none';
-
       console.log(`Successfully loaded ${modelUrls.length} models`);
 
-      // Start auto play by default if more than one model exists
+      // Start auto play by default if more than one model exists.
       if (modelUrls.length > 1) {
         autoPlayActive = true;
         autoPlayButton.textContent = "Stop Auto Play";
@@ -194,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingIndicator.style.display = 'none';
     });
 
-  // Set up model cycling controls
+  // Set up model cycling controls.
   function setupModelControls() {
     if (modelUrls.length <= 1) {
       document.getElementById('model-controls').style.display = 'none';
@@ -214,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Set up auto play toggling via the button
+  // Set up auto play toggling via the button.
   if (autoPlayButton) {
     autoPlayButton.addEventListener('click', () => {
       if (modelUrls.length <= 1) {
@@ -237,19 +324,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Helper function to display error messages
+  // Helper function to display error messages.
   function showError(message) {
     errorMessage.textContent = message;
     errorMessage.style.display = 'block';
     loadingIndicator.style.display = 'none';
   }
 
-  // Listen for AR session events
+  // Listen for AR session events.
   modelViewer.addEventListener('ar-status', (event) => {
     console.log(`AR Status: ${event.detail.status}`);
   });
 
-  // Listen for model loading events
+  // Listen for model loading events.
   modelViewer.addEventListener('load', () => {
     console.log("Model loaded successfully");
     modelViewer.setAttribute('camera-orbit', '0deg 70deg 4.5m');
@@ -262,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showError("Error displaying 3D model. The model may be incompatible or corrupted.");
   });
 
-  // Set up lighting controls event listeners
+  // Set up lighting controls event listeners.
   if (exposureControl) {
     exposureControl.addEventListener('input', () => {
       modelViewer.setAttribute('exposure', exposureControl.value);

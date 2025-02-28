@@ -4,10 +4,11 @@
     --secondary-color: #b490ff;  /* A mid-tone accent color */
   }
   
-model-viewer::part(spinner),
-model-viewer::part(progress-bar) {
-  display: none;
-}
+  model-viewer::part(spinner),
+  model-viewer::part(progress-bar) {
+    display: none;
+  }
+  
   /* Basic resets and styles */
   body {
     margin: 0;
@@ -107,9 +108,17 @@ model-viewer::part(progress-bar) {
     bottom: 20px;
     width: 100%;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1rem;
+    z-index: 200;
+  }
+  
+  #model-controls .control-left,
+  #model-controls .control-center,
+  #model-controls .control-right {
+    display: flex;
     gap: 10px;
-    z-index: 100;
   }
   
   #model-controls button {
@@ -200,4 +209,45 @@ model-viewer::part(progress-bar) {
       width: 90%;
     }
   }
-
+  
+  /* New styling for the KPI display container */
+  /* Positioned fixed at the bottom left, above the control bar */
+  #kpiDisplay {
+    position: fixed;
+    bottom: 65px; /* Positioned above the control bar */
+    left: 10px;   /* Left aligned */
+    background: rgba(255, 255, 255, 0.9); /* White with slight transparency */
+    padding: 0.5rem;
+    border-radius: 8px;
+    z-index: 150;
+  }
+  
+  /* 2x2 Grid for KPI cards */
+  .kpi-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: auto;
+    gap: 0.5rem;
+    max-width: 250px;
+  }
+  
+  /* KPI Box with subtle grey/light indigo tone */
+  .kpi-box {
+    background: #E8EAF6; /* Light indigo tone */
+    border-radius: 8px;
+    padding: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  
+  .kpi-box .kpi-label {
+    font-size: 0.9rem;
+    color: #3F51B5; /* Indigo shade */
+    margin-bottom: 0.3rem;
+  }
+  
+  .kpi-box .kpi-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #3F51B5;
+  }
