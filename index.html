@@ -61,16 +61,17 @@
   </div>
 
   <!-- KPI Display (always visible) -->
-  <div id="kpiDisplay">
-    <div class="kpi-container" id="kpiContainer">
-      <!-- KPI cards will be dynamically inserted here by app.js -->
-    </div>
+  <!-- KPI Display (hidden by default) -->
+<div id="kpiDisplay" style="display: none;">
+  <div class="kpi-container" id="kpiContainer">
+    <!-- KPI cards will be dynamically inserted here by app.js -->
   </div>
+</div>
 
   <!-- Model cycling and auto play controls -->
   <div id="model-controls">
     <div class="control-left">
-      <button id="toggleKPIButton">Hide KPI</button>
+      <button id="toggleKPIButton">Show KPI</button>
     </div>
     <div class="control-center">
       <button id="toggleAutoPlay">Stop Auto Play</button>
