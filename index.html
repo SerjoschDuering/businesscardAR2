@@ -4,18 +4,61 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>3D Model Viewer</title>
+  
   <!-- Import the Model-Viewer component -->
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <link rel="stylesheet" href="styles.css">
+  
+  <!-- Additional inline styles for Fun Facts to ensure the text is visible -->
+  <style>
+    /* Fun Facts container positioned at the top right */
+    #funfacts {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 102;
+      max-width: 300px;
+      background: rgba(250, 246, 254, 0.9); /* Slightly tinted background */
+      padding: 5px;
+      border-radius: 5px;
+    }
+    
+    /* Base styling for the fun fact text - increased font size and forced styles */
+    .funfact {
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 24px !important;
+      color: var(--primary-color) !important;
+      border: 1px solid var(--primary-color) !important;
+      padding: 5px 10px;
+      border-radius: 4px;
+      transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.6s ease;
+      opacity: 1;
+      transform: translateX(0);
+    }
+    
+    /* Animation class to fade and slide-out the fun fact text */
+    .fade-out {
+      opacity: 0;
+      transform: translateX(20px);
+      border-color: transparent;
+    }
+  </style>
 </head>
 <body>
   <link rel="icon" href="data:,">
+  
   <!-- Branding container with logo and website link -->
   <div id="branding-container">
     <img src="rehubLogo.jpg" alt="Rehub Logo" id="branding-logo">
     <p><a href="https://www.rehub.team" target="_blank">Visit our Website</a></p>
   </div>
-
+  
+  <!-- Fun Facts container: cycles through introductory sentences -->
+  <div id="funfacts">
+    <p class="funfact"></p>
+  </div>
+  
   <div id="loading-indicator">
     <div class="spinner"></div>
     <p id="loading-text">Loading models...</p>
@@ -38,9 +81,9 @@
     auto-rotate
     exposure="0.4">
   </model-viewer>
-
-  <!-- Settings button to open render settings modal -->
-  <div id="settings-button">
+  
+  <!-- Settings button is now hidden -->
+  <div id="settings-button" style="display: none;">
     <button id="open-settings-btn">⚙</button>
   </div>
   
@@ -59,24 +102,21 @@
       </div>
     </div>
   </div>
-
-  <!-- KPI Display (always visible) -->
+  
   <!-- KPI Display (hidden by default) -->
-<div id="kpiDisplay" style="display: none;">
-  <div class="kpi-container" id="kpiContainer">
-    <!-- KPI cards will be dynamically inserted here by app.js -->
+  <div id="kpiDisplay" style="display: none;">
+    <div class="kpi-container" id="kpiContainer">
+      <!-- KPI cards will be dynamically inserted here by app.js -->
+    </div>
   </div>
-</div>
-
+  
   <!-- Model cycling and auto play controls -->
   <div id="model-controls">
     <div class="control-left">
       <button id="toggleKPIButton">Show KPI</button>
     </div>
-    <div class="control-center">
-      <button id="toggleAutoPlay">Stop Auto Play</button>
-    </div>
     <div class="control-right">
+      <button id="toggleAutoPlay">Stop Auto Play</button>
       <button id="prevModel">&lt;</button>
       <button id="nextModel">&gt;</button>
     </div>
@@ -116,6 +156,33 @@
         toggleKPIButton.textContent = "Show KPI";
       }
     });
+    
+    // Fun Facts cycling functionality
+    const funfactElement = document.querySelector('.funfact');
+    const sentences = [
+      "Machbarkeitsstudien in Minuten – innovative Konzepte blitzschnell erstellt.",
+      "Viele Entwurfvarianten generieren und anhand von KPI vergleichen – treffen Sie fundierte Entscheidungen.",
+      "Architectural Intelligence – wo Zukunft und Design in Perfektion verschmelzen."
+    ];
+    let currentSentenceIndex = 0;
+    
+    // Initialize with the first sentence.
+    funfactElement.textContent = sentences[currentSentenceIndex];
+    
+    function cycleFunFacts() {
+      // Trigger fade-out and slide-out animation.
+      funfactElement.classList.add('fade-out');
+      
+      // After the fade-out animation, update the text and remove fade-out to fade back in.
+      setTimeout(() => {
+        currentSentenceIndex = (currentSentenceIndex + 1) % sentences.length;
+        funfactElement.textContent = sentences[currentSentenceIndex];
+        funfactElement.classList.remove('fade-out');
+      }, 2000);
+    }
+    
+    // Cycle every 5 seconds (adjust as needed).
+    setInterval(cycleFunFacts, 5000);
   </script>
 </body>
 </html>
