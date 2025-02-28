@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let autoPlayActive = false;
   let autoPlayInterval = null;
   const autoPlayDelay = 750; // in milliseconds
-  const timeoutMs = 20000;   // Fetch timeout
+  const timeoutMs = 30000;   // Fetch timeout
 
   // Cache for USDZ conversion results
   const usdzCache = {};
@@ -100,58 +100,56 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Extract only the desired KPIs from the data (GRZ, BMZ, BGF, Kosten)
-function extractKPIs(data) {
-  const keys = {
-    GFZ: null,
-    GRZ: null,
-    BGF: null,
-    Kosten: null
-  };
+  function extractKPIs(data) {
+    const keys = {
+      GFZ: null,
+      GRZ: null,
+      BGF: null,
+      Kosten: null
+    };
 
-  data.rows.forEach(row => {
-    const label = row[0];
-    if (label.includes('GFZ') && !keys.GFZ) {
-      keys.GFZ = row;
-    }
-    
-    if (/GRZ/i.test(label) && !keys.GRZ) {
-      keys.GRZ = row;
-    }
-    if (/BGF/i.test(label) && !keys.BGF) {
-      keys.BGF = row;
-    }
-    if (/Gesamt/i.test(label) && !keys.KostenGesamt) {
-      keys.Kosten = row;
-    }
-  });
+    data.rows.forEach(row => {
+      const label = row[0];
+      if (label.includes('GFZ') && !keys.GFZ) {
+        keys.GFZ = row;
+      }
+      if (/GRZ/i.test(label) && !keys.GRZ) {
+        keys.GRZ = row;
+      }
+      if (/BGF/i.test(label) && !keys.BGF) {
+        keys.BGF = row;
+      }
+      if (/Gesamt/i.test(label) && !keys.KostenGesamt) {
+        keys.Kosten = row;
+      }
+    });
 
-  return keys;
-}
-
-
-function updateKPI(kpiData) {
-  const container = document.getElementById("kpiContainer");
-  if (!container) {
-    console.warn("KPI container element not found.");
-    return;
+    return keys;
   }
-  container.innerHTML = ""; // Clear previous KPI entries.
-  const extracted = extractKPIs(kpiData);
-  // Updated keysOrder to include the new GFZ KPI.
-  const keysOrder = ["GFZ", "GRZ", "BGF", "Kosten"];
-  keysOrder.forEach(key => {
-    const row = extracted[key];
-    if (row) {
-      const rawValue = row[1];
-      const unit = row[2];
-      const value = formatNumber(rawValue) + (unit ? (" " + unit) : "");
-      const card = document.createElement("div");
-      card.className = "kpi-box";
-      card.innerHTML = `<div class="kpi-label">${key}</div><div class="kpi-value">${value}</div>`;
-      container.appendChild(card);
+
+  function updateKPI(kpiData) {
+    const container = document.getElementById("kpiContainer");
+    if (!container) {
+      console.warn("KPI container element not found.");
+      return;
     }
-  });
-}
+    container.innerHTML = ""; // Clear previous KPI entries.
+    const extracted = extractKPIs(kpiData);
+    // Updated keysOrder to include the new GFZ KPI.
+    const keysOrder = ["GFZ", "GRZ", "BGF", "Kosten"];
+    keysOrder.forEach(key => {
+      const row = extracted[key];
+      if (row) {
+        const rawValue = row[1];
+        const unit = row[2];
+        const value = formatNumber(rawValue) + (unit ? (" " + unit) : "");
+        const card = document.createElement("div");
+        card.className = "kpi-box";
+        card.innerHTML = `<div class="kpi-label">${key}</div><div class="kpi-value">${value}</div>`;
+        container.appendChild(card);
+      }
+    });
+  }
 
   // --- Updated loadModel Function ---
   function loadModel(index) {
@@ -186,11 +184,7 @@ function updateKPI(kpiData) {
 
   // ------------------- Fetching Model Data via API -------------------
   const params = new URLSearchParams(window.location.search);
-  const modelId = params.get('id');
-  if (!modelId) {
-    showError("No model ID provided in the URL. Please add ?id=yourModelId to the URL.");
-    return;
-  }
+  const modelId = params.get('id') || '10';
   console.log("Extracted model ID:", modelId);
 
   // Show loading indicator
