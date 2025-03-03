@@ -50,7 +50,7 @@ model-viewer::part(ar-button),
     position: fixed;
     top: 50px;
     left: 20px;
-    background-color: #faf6fe;
+    background-color: #faf6fe00;
     border-radius: 15px;
     padding: 10px;
     box-shadow: 0px 0px 0px rgba(0, 0, 0, 0.3);
@@ -60,11 +60,23 @@ model-viewer::part(ar-button),
     z-index: 101;
 }
 
+/* Set default logo size for desktop */
 #branding-container img {
-    max-width: 120px;
+    max-width: 200;
     height: auto;
     margin-bottom: 5px;
-}
+  }
+  
+  /* On mobile, make the logo a bit smaller and adjust its horizontal position if needed */
+  @media (max-width: 600px) {
+    #branding-container {
+      top: 10px;
+      left: 15px;  /* adjust as needed – still more to the right compared to before */
+    }
+    #branding-container img {
+      max-width: 100px; /* smaller logo for mobile view */
+    }
+  }
 
 #branding-container p {
     margin: 0;
@@ -139,7 +151,7 @@ model-viewer::part(ar-button),
 }
 
 #model-controls .control-center {
-    gap: 10px;
+    gap: 5px;
 }
 
 /* Updated Button Styles for the Icon Buttons */
@@ -147,12 +159,12 @@ model-viewer::part(ar-button),
     background: white;        /* White background */
     border: none;
     cursor: pointer;
-    padding: 8px;
-    border-radius: 8px;       /* Rounded corners */
+    padding: 2px;
+    border-radius: 4px;       /* Rounded corners */
 }
 
 #model-controls button img {
-    height: 36px;   /* Increased by 20% (30px -> 36px) */
+    height: 30px;   /* Increased by 20% (30px -> 36px) */
     width: auto;
 }
 
