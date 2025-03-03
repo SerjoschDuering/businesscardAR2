@@ -30,7 +30,7 @@ model-viewer::part(ar-button),
   border: none;
   border-radius: 8px;
   position: absolute;
-  top: 16px;
+  bottom: 16px; /* Set to bottom instead of top */
   right: 16px;
   width: 50px;
   height: 50px;
@@ -39,14 +39,12 @@ model-viewer::part(ar-button),
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .custom-ar-button img {
   width: 24px;
   height: 24px;
 }
-
 /* Branding container */
 #branding-container {
     position: fixed;
