@@ -117,7 +117,7 @@
   ar
   ar-modes="scene-viewer quick-look"
   camera-orbit="0deg 70deg 4.5m"
-  camera-target="0m 1m 0m"
+  camera-target="0m 0.1m 0m"
   scale="0.1 0.1 0.1"
   shadow-intensity="1" 
   shadow-softness="0.01"
@@ -253,7 +253,7 @@
         currentSentenceIndex = (currentSentenceIndex + 1) % sentences.length;
         funfactElement.innerHTML = sentences[currentSentenceIndex];
         funfactElement.classList.remove('fade-out');
-      }, 1500);
+      }, 1000);
     }
   
     setInterval(cycleFunFacts, 7000);
