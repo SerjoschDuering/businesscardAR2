@@ -2,31 +2,55 @@
     --primary-color: #603aff;   /* Strong signature color */
     --background-color: #faf6fe; /* Signature background */
     --secondary-color: #b490ff;  /* A mid-tone accent color */
-  }
-  
-  #modelViewer {
+}
+
+#modelViewer {
     --progress-bar-height: 0px !important;
     --progress-bar-color: transparent !important;
-  }
-  
-  /* Basic resets and styles */
-  body {
+}
+
+
+/* Basic resets and styles */
+body {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
     background-color: var(--background-color);
-  }
-  
-  model-viewer {
+}
+
+model-viewer {
     width: 100%;
     height: 100vh;
     background-color: transparent;
-  }
-  
-  /* Branding container for logo and link */
-  #branding-container {
+}
+
+model-viewer::part(ar-button),
+.custom-ar-button {
+  background: white;
+  border: none;
+  border-radius: 8px;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.custom-ar-button img {
+  width: 24px;
+  height: 24px;
+}
+
+/* Branding container */
+#branding-container {
     position: fixed;
-    top: 20px;
+    top: 50px;
     left: 20px;
     background-color: #faf6fe;
     border-radius: 15px;
@@ -36,26 +60,26 @@
     flex-direction: column;
     align-items: center;
     z-index: 101;
-  }
-  
-  #branding-container img {
+}
+
+#branding-container img {
     max-width: 120px;
     height: auto;
     margin-bottom: 5px;
-  }
-  
-  #branding-container p {
+}
+
+#branding-container p {
     margin: 0;
     font-size: 0.7rem;
-  }
-  
-  #branding-container a {
+}
+
+#branding-container a {
     text-decoration: none;
     color: var(--faf6fe);
-  }
-  
-  /* Loading indicator styles */
-  #loading-indicator {
+}
+
+/* Loading indicator styles */
+#loading-indicator {
     position: fixed;
     top: 0;
     left: 0;
@@ -69,9 +93,9 @@
     color: white;
     z-index: 1000;
     font-size: 1.2rem;
-  }
-  
-  .spinner {
+}
+
+.spinner {
     border: 5px solid #f3f3f3;
     border-top: 5px solid var(--primary-color);
     border-radius: 50%;
@@ -79,15 +103,15 @@
     height: 50px;
     animation: spin 1.5s linear infinite;
     margin-bottom: 20px;
-  }
-  
-  @keyframes spin {
+}
+
+@keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-  }
-  
-  /* Error message styles */
-  #error-message {
+}
+
+/* Error message styles */
+#error-message {
     color: #FF5252;
     font-weight: bold;
     text-align: center;
@@ -96,36 +120,55 @@
     border-radius: 4px;
     background-color: rgba(255, 82, 82, 0.1);
     display: none;
-  }
-  
-  /* Controls for cycling and auto play */
-  #model-controls {
+}
+/* Bottom Controls Layout */
+#model-controls {
     position: fixed;
     bottom: 20px;
     width: 95%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 1rem; /* Reduced padding shifts the controls more to the left */
+    padding: 0 1rem;
     z-index: 200;
-  }
-  
-  #model-controls .control-left,
-  #model-controls .control-right {
+}
+
+#model-controls .control-left,
+#model-controls .control-center,
+#model-controls .control-right {
     display: flex;
+    align-items: center;
+}
+
+#model-controls .control-center {
     gap: 10px;
-  }
-  
-  #model-controls button {
-    padding: 10px 15px;
-    background: var(--primary-color);
-    color: white;
+}
+
+/* Updated Button Styles for the Icon Buttons */
+#model-controls button {
+    background: white;        /* White background */
     border: none;
-    border-radius: 4px;
-    font-size: 16px;
     cursor: pointer;
-  }
-  
+    padding: 8px;
+    border-radius: 8px;       /* Rounded corners */
+}
+
+#model-controls button img {
+    height: 36px;   /* Increased by 20% (30px -> 36px) */
+    width: auto;
+}
+
+/* Active state: full color */
+#model-controls button.active img {
+    filter: none;
+    opacity: 1;
+}
+
+/* Inactive state: muted tone */
+#model-controls button.inactive img {
+    filter: grayscale(70%);
+    opacity: 0.7;
+}
   /* Hide the settings button */
   #settings-button {
     display: none;
@@ -205,7 +248,7 @@
   /* KPI Display container */
   #kpiDisplay {
     position: fixed;
-    bottom: 65px;
+    bottom: 85px;
     left: 10px;
     background: rgba(255, 255, 255, 0.9);
     padding: 0.5rem;
@@ -244,3 +287,4 @@
   }
 
   
+  /* Additional styles for fun fact headlines and subheadlines */

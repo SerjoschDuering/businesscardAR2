@@ -7,17 +7,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const nextButton = document.getElementById('nextModel');
   const prevButton = document.getElementById('prevModel');
   const autoPlayButton = document.getElementById('toggleAutoPlay');
+  const customARButton = document.getElementById('customARButton');
 
   // Assume the KPI modal’s container exists in the HTML with id "kpiContainer"
-
-  // Lighting controls elements (inside the settings modal)
   const exposureControl = document.getElementById('exposureControl');
   const shadowControl = document.getElementById('shadowControl');
 
   // Variables for model management and auto play
   let modelUrls = [];
-  let modelsData = []; // Array to store blob URLs plus additional metadata
-  let activeModelData = null; // Currently active model metadata
+  let modelsData = [];
+  let activeModelData = null;
   let currentModelIndex = 0;
   let autoPlayActive = false;
   let autoPlayInterval = null;
@@ -99,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Extract only the desired KPIs from the data (GRZ, BMZ, BGF, Kosten)
+  // Extract only the desired KPIs from the data (GFZ, GRZ, BGF, Kosten)
   function extractKPIs(data) {
     const keys = {
       GFZ: null,
@@ -135,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     container.innerHTML = ""; // Clear previous KPI entries.
     const extracted = extractKPIs(kpiData);
-    // Updated keysOrder to include the new GFZ KPI.
     const keysOrder = ["GFZ", "GRZ", "BGF", "Kosten"];
     keysOrder.forEach(key => {
       const row = extracted[key];
@@ -212,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return {
             name: modelData.name,
             gltf: gltf,
-            kpi: modelData.kpi,  // updated property name to lower-case to match payload
+            kpi: modelData.kpi,
             active_variant: modelData.active_variant
           };
         } catch (error) {
@@ -236,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return {
             url: url,
             name: model.name,
-            kpi: model.kpi,  // updated property name
+            kpi: model.kpi,
             active_variant: model.active_variant
           };
         } catch (error) {
@@ -265,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Start auto play by default if more than one model exists.
       if (modelUrls.length > 1) {
         autoPlayActive = true;
-        autoPlayButton.textContent = "Stop Auto Play";
+        autoPlayButton.classList.add('active');
         autoPlayInterval = setInterval(() => {
           currentModelIndex = (currentModelIndex + 1) % modelUrls.length;
           loadModel(currentModelIndex);
@@ -308,17 +306,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       autoPlayActive = !autoPlayActive;
       if (autoPlayActive) {
-        autoPlayButton.textContent = "Stop Auto Play";
+        autoPlayButton.classList.add('active');
+        autoPlayButton.classList.remove('inactive');
         autoPlayInterval = setInterval(() => {
           currentModelIndex = (currentModelIndex + 1) % modelUrls.length;
           loadModel(currentModelIndex);
           console.log(`Auto Play switched to model ${currentModelIndex + 1} of ${modelUrls.length}`);
         }, autoPlayDelay);
       } else {
-        autoPlayButton.textContent = "Start Auto Play";
+        autoPlayButton.classList.add('inactive');
+        autoPlayButton.classList.remove('active');
         clearInterval(autoPlayInterval);
         autoPlayInterval = null;
       }
+    });
+  }
+
+  // Set up custom AR button.
+  if (customARButton) {
+    customARButton.addEventListener('click', () => {
+      modelViewer.activateAR();
     });
   }
 
@@ -337,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listen for model loading events.
   modelViewer.addEventListener('load', () => {
     console.log("Model loaded successfully");
-    modelViewer.setAttribute('camera-orbit', '0deg 60deg 0.25m');
+    modelViewer.setAttribute('camera-orbit', '0deg 50deg 0.25m');
     modelViewer.setAttribute('camera-target', '0m 0.01m 0m');
     modelViewer.setAttribute('scale', '0.01 0.01 0.01');
   });
