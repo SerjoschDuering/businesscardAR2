@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 4. Fetch model data
   // -----------------------------
   const params = new URLSearchParams(window.location.search);
-  const modelId = params.get('id') || '10';
+  const modelId = params.get('id') || '0';
 
   console.log("Extracted model ID:", modelId);
   loadingIndicator.style.display = 'flex';
@@ -134,59 +134,40 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(data => {
       console.log("Raw webhook response data:", data);
 
-      // Parse each entry's 'data' property with the new nested structure
-      const parsedModels = data.map((entry, index) => {
-        if (!entry.data) {
-          console.error(`Entry at index ${index} missing 'data' property.`);
-          return null;
-        }
-        const modelData = entry.data;
-        try {
-          const gltf = JSON.parse(modelData.fileContent);
-          console.log(`Parsed model at index ${index}:`, gltf);
-          return {
-            name: modelData.name,
-            gltf: gltf,
-            kpi: modelData.kpi,
-            active_variant: modelData.active_variant
-          };
-        } catch (error) {
-          console.error(`Error parsing fileContent for model at index ${index}:`, error);
-          return null;
-        }
-      }).filter(Boolean);
-
-      if (parsedModels.length === 0) {
-        console.error("No valid model JSON found.");
+      // NEW: Use the new response structure.
+      // n8n now returns an array with one object.
+      // Each key is a filename and its value is a JSON string with model info.
+      let parsedModels = [];
+      if (data && Array.isArray(data) && data.length > 0) {
+        const modelsObject = data[0];
+        Object.keys(modelsObject).forEach(key => {
+          try {
+            const modelData = JSON.parse(modelsObject[key]);
+            console.log(`Parsed model for key "${key}":`, modelData);
+            parsedModels.push({
+              name: modelData.name,
+              url: modelData.fileUrl, // Use the Azure Blob URL directly
+              kpi: modelData.kpi,
+              active_variant: modelData.active_variant
+            });
+          } catch (error) {
+            console.error(`Error parsing JSON for model key "${key}":`, error);
+          }
+        });
+      } else {
+        console.error("Invalid response format from n8n");
         showError("No valid model data found.");
         return;
       }
 
-      // Create Blob URLs from each parsed glTF JSON
-      modelsData = parsedModels.map((model, index) => {
-        try {
-          const blob = new Blob([JSON.stringify(model.gltf)], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          console.log(`Created blob URL for model at index ${index}:`, url);
-          return {
-            url: url,
-            name: model.name,
-            kpi: model.kpi,
-            active_variant: model.active_variant
-          };
-        } catch (error) {
-          console.error(`Error creating blob URL for model at index ${index}:`, error);
-          return null;
-        }
-      }).filter(Boolean);
-
-      if (modelsData.length === 0) {
-        console.error("No valid blob URLs generated.");
+      if (parsedModels.length === 0) {
+        console.error("No valid models parsed.");
         showError("Failed to prepare models for display.");
         return;
       }
 
-      // Update our modelUrls array
+      // Update our modelsData and modelUrls arrays based on the new structure.
+      modelsData = parsedModels;
       modelUrls = modelsData.map(item => item.url);
 
       // --- 5. Load the first model ---
