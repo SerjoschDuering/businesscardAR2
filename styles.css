@@ -48,7 +48,7 @@ model-viewer::part(ar-button),
 /* Branding container */
 #branding-container {
     position: fixed;
-    top: 50px;
+    top: 10px;
     left: 10px;
     background-color: #faf6fe00;
     border-radius: 15px;
